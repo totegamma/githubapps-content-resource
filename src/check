@@ -4,12 +4,6 @@ exec 3>&1 # make stdout available as fd 3 for the result
 exec 1>&2 # redirect all output to stderr for logging
 
 PAYLOAD="$(cat <&0)"
-BRANCH=$(jq -r '.source.branch // "main"' <<< $PAYLOAD)
-if [ -z "$BRANCH" ]; then
-	echo "source parameter 'branch' missing."
-	exit 1
-fi
-
 ACCOUNT=$(jq -r '.source.account // ""' <<< $PAYLOAD)
 if [ -z "$ACCOUNT" ]; then
 	echo "source parameter 'account' missing."
@@ -30,8 +24,18 @@ if [ -z "$TOKEN" ]; then
 	exit 1
 fi
 
-LATEST=$(curl -s -X GET -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.github+json" https://api.github.com/repos/$ACCOUNT/$REPO/branches \
-       | jq -r --arg branch $BRANCH 'map(select(.name==$branch)) | .[0].commit.sha // ""')
+BRANCH=$(jq -r '.source.branch // ""' <<< $PAYLOAD)
+if [ -z "$BRANCH" ]; then
+	BRANCH=$(curl -s -X GET -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.github+json" https://api.github.com/repos/$ACCOUNT/$REPO \
+	       | jq -r '.default_branch // ""')
+fi
+if [ -z "$BRANCH" ]; then
+	echo "failed to get default branch. Is your account/repository valid?"
+	exit 1
+fi
+
+LATEST=$(curl -s -X GET -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.github+json" https://api.github.com/repos/$ACCOUNT/$REPO/branches/$BRANCH \
+       | jq -r '.commit.sha // ""')
 
 if [ -z "$LATEST" ]; then
 	echo "failed to get latest commit. Is your account/repository is valid and branch exists?"

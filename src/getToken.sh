@@ -9,6 +9,12 @@ if [ -z "$ACCOUNT" ]; then
 	exit 1
 fi
 
+REPO=$(jq -r '.source.repository // ""' <<< $PAYLOAD)
+if [ -z "$REPO" ]; then
+	echo "source parameter 'repository' missing." >&2
+	exit 1
+fi
+
 APPID=$(jq -r '.source.appID // ""' <<< $PAYLOAD)
 if [ -z "$APPID" ]; then
 	echo "source parameter 'appID' missing." >&2
@@ -24,8 +30,8 @@ if [ -z "$JWT" ]; then
 	exit 1
 fi
 
-INSTALLATION_ID=$(curl -s -X GET -H "Authorization: Bearer $JWT" -H "Accept: application/vnd.github+json" https://api.github.com/app/installations \
-                | jq -r --arg target $ACCOUNT 'map(select(.account.login==$target)) | .[0].id // ""')
+INSTALLATION_ID=$(curl -s -X GET -H "Authorization: Bearer $JWT" -H "Accept: application/vnd.github+json" https://api.github.com/repos/$ACCOUNT/$REPO/installation \
+                | jq -r '.id // ""')
 if [ -z "$INSTALLATION_ID" ]; then
 	echo "failed to get INSTALLATION_ID (is your application installed to target?)" >&2
 	exit 1

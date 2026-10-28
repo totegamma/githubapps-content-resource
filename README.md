@@ -11,7 +11,7 @@ App must have 'content' read access priviledge.
 - `private_key`: *Required.* GithubApp private key
 - `account`: *Required.* Github username or organization name which has target repository
 - `repository`: *Required.* repository name which you want to pull
-- `branch`: *Optional.* target branch name (default: main)
+- `branch`: *Optional.* target branch name (default: the repository's default branch)
 
 ## Example
 
